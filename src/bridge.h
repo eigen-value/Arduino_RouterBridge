@@ -9,22 +9,16 @@
 #include <Arduino_RPClite.h>
 
 
-class Bridge {
-
-    RPCClient* client = nullptr;
-    RPCServer* server = nullptr;
-    ITransport* transport;
+class Bridge: public RPCClient, public RPCServer {
 
 public:
-    Bridge(ITransport& t) : transport(&t) {}
-    Bridge(Stream& stream) {
-        transport = new SerialTransport(stream);
-    }
+
+    Bridge(ITransport& t) : RPCClient(t), RPCServer(t) {}
+
+    Bridge(Stream& stream) : RPCClient(stream), RPCServer(stream) {}
 
     // Initialize the bridge
     bool begin() {
-        client = new RPCClient(*transport);
-        server = new RPCServer(*transport);
         bool res;
         return call(RESET_METHOD, res);
     }
@@ -35,35 +29,50 @@ public:
         if (!call(BIND_METHOD, res, name)) {
             return false;
         }
-        return server->bind(name, func);
+        return bind(name, func);
     }
 
     void update() {
-        // Protect the following calls with a mutex if necessary
-        // server->read_request();  // <- inbound
-        // server->serve();         // -> outbound
-        server->run();
+        // Read LOCK
+        get_rpc();
+        // END Read LOCK
+
+        process_request();
+        
+        // Write LOCK
+        send_response();
+        // END Write LOCK
     }
 
     template<typename RType, typename... Args>
     bool call(const MsgPack::str_t method, RType& result, Args&&... args) {
         // Protect the following calls with a mutex if necessary
-        // client->send_call();         // -> outbound
-        // client->read_response();     // <- inbound
-        return client->call(method, result, std::forward<Args>(args)...);
-    }
 
-    template<typename... Args>
-    void notify(const MsgPack::str_t method, Args&&... args)  {
-        client->notify(method, std::forward<Args>(args)...);
+        // Write LOCK
+        if(!send_rpc(method, std::forward<Args>(args)...)) {
+            lastError.code = GENERIC_ERR;
+            lastError.traceback = "Failed to send RPC call";
+            return false;
+        }
+        // END Write LOCK
+
+        while (true) {
+            // Read LOCK
+            if (get_response(result)) {
+                break;
+            }
+            // END Read LOCK
+        }
+
+        return (lastError.code == NO_ERR);
     }
 
     String get_error_message() const {
-        return (String) client->lastError.traceback;
+        return (String) lastError.traceback;
     }
 
     uint8_t get_error_code() const {
-        return (uint8_t) client->lastError.code;
+        return (uint8_t) lastError.code;
     }
 
 };
