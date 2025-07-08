@@ -11,21 +11,30 @@
 
 class Bridge: public RPCClient, public RPCServer {
 
-    SemaphoreHandle_t write_mutex = NULL;
+    SemaphoreHandle_t write_mutex;
 
-    SemaphoreHandle_t read_mutex = NULL;
+    SemaphoreHandle_t read_mutex;
 
 public:
 
-    Bridge(ITransport& t) : RPCClient(t), RPCServer(t) {}
+    Bridge(ITransport& t) : RPCClient(t), RPCServer(t) {
+        write_mutex = xSemaphoreCreateMutex();
+        read_mutex = xSemaphoreCreateMutex();
+    }
 
-    Bridge(Stream& stream) : RPCClient(stream), RPCServer(stream) {}
+    Bridge(Stream& stream) : RPCClient(stream), RPCServer(stream) {
+        write_mutex = xSemaphoreCreateMutex();
+        read_mutex = xSemaphoreCreateMutex();
+    }
+
+    ~Bridge() {
+        vSemaphoreDelete(write_mutex);
+        vSemaphoreDelete(read_mutex);
+    }
 
     // Initialize the bridge
     bool begin() {
         bool res;
-        write_mutex = xSemaphoreCreateMutex();
-        read_mutex = xSemaphoreCreateMutex();
         return call(RESET_METHOD, res);
     }
 

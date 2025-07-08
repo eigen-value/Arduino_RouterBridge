@@ -23,26 +23,19 @@ int lengthyOp(){
     return 88;
 }
 
-void serve(void * pvParameters) {
-    bridge.update();
-    delay(1);
-}
+// void serve(void * pvParameters) {
+//     bridge.update();
+//     delay(1);
+// }
 
 void silly_call(void * pvParameters) {
     int rand_int;
-    bool ok = bridge.call("get_rand", rand_int);
 
-    if (ok) {
-        Serial.print("Random int from server: ");
-        Serial.println(rand_int);
+    while(1){
+        bool ok = bridge.call("get_rand", rand_int);
+        vTaskDelay(1000 / portTICK_PERIOD_MS);  // Wait 1 second
     }
 
-    delay(100);
-}
-
-bool set_led(bool state) {
-    digitalWrite(LED_BUILTIN, state);
-    return state;
 }
 
 void setup() {
@@ -65,17 +58,14 @@ void setup() {
 
     bridge.provide("lengthyOp", lengthyOp);
 
-    xTaskCreate(&serve, "serve", 10000, NULL, 0, NULL);
-    //xTaskCreate(&silly_call, "silly_call", 10000, NULL, 0, NULL);
+    //xTaskCreate(&serve, "serve", 10000, NULL, 0, NULL);
+    xTaskCreate(&silly_call, "silly_call", 10000, NULL, 0, NULL);
 
 }
 
 void loop() {
-    bool val = false;
-
-    set_led(val);
-    val = !val;
-
-    delay(500);
-
+  digitalWrite(LED_BUILTIN, HIGH);  // turn the LED on (HIGH is the voltage level)
+  delay(1000);                      // wait for a second
+  digitalWrite(LED_BUILTIN, LOW);   // turn the LED off by making the voltage LOW
+  delay(1000);
 }
