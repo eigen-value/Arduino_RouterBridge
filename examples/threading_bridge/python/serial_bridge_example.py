@@ -1,3 +1,5 @@
+# THIS CODE IS FOR TESTING PURPOSES ONLY
+
 import threading
 import random
 import time
@@ -8,10 +10,12 @@ PORT = '/dev/ttyUSB0'
 bridge = SerialBridge(port=PORT, baudrate=115200)
 
 def call_lengthy_op():
-    print("calling lengthyOp...")
-    res = bridge.call("lengthyOp")
-    print(f"lengthyOp result: {res}")
-    time.sleep(1)
+    time.sleep(10)
+    while True:
+        time.sleep(1)
+        print("calling lengthyOp...")
+        res = bridge.call("lengthyOp")
+        print(f"lengthyOp result: {res}")
 
 
 def get_rand():
@@ -42,7 +46,6 @@ client_thread = threading.Thread(target=call_lengthy_op)
 
 bridge.start()
 
-time.sleep(15)
 client_thread.start()
 
 while True:

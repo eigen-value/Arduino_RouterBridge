@@ -1,39 +1,43 @@
 #include <Arduino_BridgeImola.h>
 
-Bridge bridge(Serial0);
+SerialTransport ser(Serial0);
+Bridge bridge(ser);
 
 String greet() {
     return String("Hello Friend");
 }
 
-// int lengthyOp() {
-//   Serial.println("lengthy operation...");
-//   unsigned long startTime = millis();
-//   int result = 0;
+int lengthyOp() {
+  Serial.println("lengthy operation...");
+  unsigned long startTime = millis();
+  int result = 0;
 
-//   while (millis() - startTime < 3000) {
-//     result = (result + 1) % 1000 ;
-//   }
-//   Serial.print("-lengthyOp done returning: ");
-//   Serial.println(result);
-//   return result;
-// }
-
-int lengthyOp(){
-    return 88;
+  while (millis() - startTime < 3000) {
+    result = (result + 1) % 1000 ;
+  }
+  Serial.print("-lengthyOp done returning: ");
+  Serial.println(result);
+  return result;
 }
 
-// void serve(void * pvParameters) {
-//     bridge.update();
-//     delay(1);
-// }
+void serve(void * pvParameters) {
+    while(1){
+        Serial.println("...upd");
+        bridge.update();
+        vTaskDelay(10 / portTICK_PERIOD_MS);
+    }
+}
 
 void silly_call(void * pvParameters) {
     int rand_int;
-
     while(1){
+        Serial.println("...call");
         bool ok = bridge.call("get_rand", rand_int);
-        vTaskDelay(1000 / portTICK_PERIOD_MS);  // Wait 1 second
+        if (ok) {
+            Serial.print("got rand_int: ");
+            Serial.println(rand_int);
+        }
+        vTaskDelay(10 / portTICK_PERIOD_MS);  // Wait 1 second
     }
 
 }
@@ -58,14 +62,14 @@ void setup() {
 
     bridge.provide("lengthyOp", lengthyOp);
 
-    //xTaskCreate(&serve, "serve", 10000, NULL, 0, NULL);
+    xTaskCreate(&serve, "serve", 10000, NULL, 0, NULL);
     xTaskCreate(&silly_call, "silly_call", 10000, NULL, 0, NULL);
 
 }
 
 void loop() {
   digitalWrite(LED_BUILTIN, HIGH);  // turn the LED on (HIGH is the voltage level)
-  delay(1000);                      // wait for a second
+  delay(100);                      // wait for a second
   digitalWrite(LED_BUILTIN, LOW);   // turn the LED off by making the voltage LOW
-  delay(1000);
+  delay(100);
 }

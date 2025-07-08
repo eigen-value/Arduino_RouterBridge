@@ -1,3 +1,5 @@
+# THIS CODE IS FOR TESTING PURPOSES ONLY
+
 import threading
 import msgpack
 import serial
@@ -28,6 +30,7 @@ class SerialBridge:
 
         self.read_lock = threading.Lock()
         self.write_lock = threading.Lock()
+        self.response_q_lock = threading.Lock()
 
     def call(self, method, *args):
         with self.write_lock:
@@ -36,14 +39,14 @@ class SerialBridge:
 
         data = None
         while True:
-            if len(self.response_q) > 0 and self.response_q[0][1] == self.msg_id:
-                data = self.response_q[0]
-                self.response_q = self.response_q[1:]
-                break
+            with self.response_q_lock:
+                if len(self.response_q) > 0 and self.response_q[0][1] == self.msg_id:
+                    data = self.response_q[0]
+                    self.response_q = self.response_q[1:]
+                    break
+            time.sleep(0)
 
-        unpacker = msgpack.Unpacker(BytesIO(data))
-        for message in unpacker:
-            print(message)
+        return data[3]
 
     def notify(self, method, *args):
         request = [NOTIFY, method, [*args]]
@@ -80,7 +83,8 @@ class SerialBridge:
             self.requests_q.append(message)
         elif msgtype == RESPONSE:
             # response = self.on_response(message[1], message[2], message[3])
-            self.response_q.append(message)
+            with self.response_q_lock:
+                self.response_q.append(message)
         elif msgtype == NOTIFY:
             # self.on_notify(message[1], message[2])
             # return None
@@ -88,7 +92,7 @@ class SerialBridge:
         else:
             raise Exception("Unknown message type: type = {0}".format(msgtype))
         return
-    
+
     def start(self):
         """Start the serial server loop"""
         self.running = True
@@ -97,11 +101,11 @@ class SerialBridge:
     def is_request(self, message):
         msgtype = message[0]
         return msgtype == REQUEST
-    
+
     def is_notify(self, message):
         msgtype = message[0]
         return msgtype == NOTIFY
-    
+
     def is_response(self, message):
         msgtype = message[0]
         return msgtype == RESPONSE
@@ -130,12 +134,25 @@ class SerialBridge:
             with self.write_lock:
                 self.ser.write(msgpack.packb(response))
 
+    def consume_first(self):
+        with self.read_lock:
+            unpacker = msgpack.Unpacker(BytesIO(self.data))
+            for i, message in enumerate(unpacker):
+                if i>0:
+                    return
+                if isinstance(message, list):
+                    self.data = self.data[len(msgpack.packb(message)):]
+                else:
+                    self.data.clear()
+
 
     def _run(self):
         while self.running:
             try:
                 with self.read_lock:
                     self.data.extend(self.ser.read(1024))
+                    if len(self.data) > 0:
+                        print(self.data)
 
                 self.dispatch()
 
@@ -143,6 +160,8 @@ class SerialBridge:
 
             except Exception as e:
                 print(f"Error: {e}")
+                self.consume_first()
+                #raise(e)
         print("Server stopped")
 
     def stop(self):

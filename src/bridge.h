@@ -22,11 +22,6 @@ public:
         read_mutex = xSemaphoreCreateMutex();
     }
 
-    Bridge(Stream& stream) : RPCClient(stream), RPCServer(stream) {
-        write_mutex = xSemaphoreCreateMutex();
-        read_mutex = xSemaphoreCreateMutex();
-    }
-
     ~Bridge() {
         vSemaphoreDelete(write_mutex);
         vSemaphoreDelete(read_mutex);
