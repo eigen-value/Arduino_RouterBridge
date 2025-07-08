@@ -45,7 +45,7 @@ public:
     void update() {
         while (true){
             // Acquire Read LOCK
-            if (xSemaphoreTake( read_mutex, ( TickType_t ) 10 ) == pdTRUE){
+            if (xSemaphoreTake( read_mutex, 10 )){
                 if (get_rpc()) {
                     // Release Read LOCK
                     xSemaphoreGive(read_mutex);
@@ -62,7 +62,7 @@ public:
         
         while (true){
             // Acquire Write LOCK
-            if (xSemaphoreTake( write_mutex, ( TickType_t ) 10 ) != pdTRUE){
+            if (xSemaphoreTake( write_mutex, 10 )){
                 send_response();
                 xSemaphoreGive(write_mutex);
                 vTaskDelay(1);
@@ -81,7 +81,7 @@ public:
 
         while (true) {
             // Acquire Write LOCK
-            if (xSemaphoreTake( write_mutex, ( TickType_t ) 10 ) != pdTRUE){
+            if (xSemaphoreTake( write_mutex, 10 )){
                 send_rpc(method, std::forward<Args>(args)...);
                 xSemaphoreGive(write_mutex);
                 vTaskDelay(1);
@@ -94,7 +94,7 @@ public:
 
 
         while (true) {
-            if (xSemaphoreTake(read_mutex, pdMS_TO_TICKS(10)) == pdTRUE) {
+            if (xSemaphoreTake(read_mutex, 10 )) {
                 // Critical section starts
                 if (get_response(result)) {
                     xSemaphoreGive(read_mutex); // Release before breaking
