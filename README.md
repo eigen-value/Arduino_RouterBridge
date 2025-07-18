@@ -1,5 +1,3 @@
-In this repo it will be implemented an Arduino library wrapper for RPClite to be run on Imola boards.
-
-The desired API is shown in https://github.com/bcmi-labs/Arduino_BridgeImola/blob/main/desired.ino.
+In this repo it will be implemented an Arduino library wrapper for RPClite to be run on Q boards.
 
 This is WIP. Expects changes soon.

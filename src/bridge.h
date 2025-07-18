@@ -1,7 +1,7 @@
 #pragma once
 
-#ifndef BRIDGE_IMOLA_H
-#define BRIDGE_IMOLA_H
+#ifndef ROUTER_BRIDGE_H
+#define ROUTER_BRIDGE_H
 
 #define RESET_METHOD "$/reset"
 #define BIND_METHOD "$/register"
@@ -9,7 +9,7 @@
 #include <Arduino_RPClite.h>
 
 
-class Bridge: public RPCClient, public RPCServer {
+class BridgeClass: public RPCClient, public RPCServer {
 
     SemaphoreHandle_t write_mutex;
 
@@ -17,12 +17,12 @@ class Bridge: public RPCClient, public RPCServer {
 
 public:
 
-    Bridge(ITransport& t) : RPCClient(t), RPCServer(t) {
+    BridgeClass(ITransport& t) : RPCClient(t), RPCServer(t) {
         write_mutex = xSemaphoreCreateMutex();
         read_mutex = xSemaphoreCreateMutex();
     }
 
-    ~Bridge() {
+    ~BridgeClass() {
         vSemaphoreDelete(write_mutex);
         vSemaphoreDelete(read_mutex);
     }
@@ -47,20 +47,16 @@ public:
     }
 
     void update() {
-        while (true){
-            // Acquire Read LOCK
-            if (xSemaphoreTake( read_mutex, 10 )){
-                if (get_rpc()) {
-                    // Release Read LOCK
-                    xSemaphoreGive(read_mutex);
-                    break;
-                }
-                xSemaphoreGive(read_mutex); // Release if no RPC
-                vTaskDelay(1); // Yield to other tasks (optional but good practice)
-            } else {
-                vTaskDelay(1);
-            }
+
+        if (!xSemaphoreTake( read_mutex, 10 )) return;
+
+        if (!get_rpc()) {
+            xSemaphoreGive(read_mutex);
+            vTaskDelay(1);
+            return;
         }
+
+        xSemaphoreGive(read_mutex);
 
         process_request();
         
@@ -127,4 +123,4 @@ public:
 
 };
 
-#endif // BRIDGE_IMOLA_H
+#endif // ROUTER_BRIDGE_H

@@ -1,13 +1,13 @@
-#include <Arduino_BridgeImola.h>
+#include <Arduino_RouterBridge.h>
 
-Bridge bridge(Serial1);
+Bridge bridge(Serial0);
 
 void setup() {
     Serial.begin(115200);
     while (!Serial);
 
-    Serial1.begin(115200);
-    while (!Serial1);
+    Serial0.begin(115200);
+    while (!Serial0);
     
     pinMode(LED_BUILTIN, OUTPUT);
 
