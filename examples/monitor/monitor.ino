@@ -1,7 +1,8 @@
 #include <Arduino_RouterBridge.h>
 
-Bridge bridge(Serial0);
-Monitor BridgeMonitor(Bridge);
+SerialTransport ser(Serial0);
+BridgeClass Bridge(ser);
+BridgeMonitor BridgeMonitor(Bridge);
 
 
 bool set_led(bool state) {
@@ -21,6 +22,9 @@ void setup() {
     Serial.begin(115200);
     while (!Serial);
     
+    Serial0.begin(115200);
+    while (!Serial0);
+
     if (!Bridge.begin()) {
         Serial.println("cannot setup Bridge");
     }
@@ -38,20 +42,25 @@ void setup() {
     }
 
     Bridge.provide("add", add);
+    Bridge.provide("greet", greet);
 
 }
 
 void loop() {
-    float res;
-    if (!Bridge.call("multiply", res, 1.0, 2.0)) {
-        Serial.println("Error calling method: multiply");
-        Serial.println(Bridge.get_error_code());
-        Serial.println(Bridge.get_error_message());
-    };
 
     Bridge.notify("signal", 200);
 
     Monitor.write("DEBUG: a debug message");
 
+    // read needs to be fixed
+    // String incoming_msg;
+    // if (Monitor.read(incoming_msg, 64)) {
+    //     Serial.println(incoming_msg);
+    // } else {
+    //     Serial.println("ERROR on Monitor.read");
+    // }
+
     Bridge.update();
+
+    delay(500);
 }
