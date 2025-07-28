@@ -26,6 +26,7 @@ class BridgeClass {
 
     struct k_mutex read_mutex;
     struct k_mutex write_mutex;
+    struct k_mutex big_mutex;
     
     k_tid_t upd_tid;
     k_thread_stack_t *upd_stack_area;
@@ -44,6 +45,7 @@ public:
 
         k_mutex_init(&read_mutex);
         k_mutex_init(&write_mutex);
+        k_mutex_init(&big_mutex);
 
         client = new RPCClient(*transport);
         server = new RPCServer(*transport);
@@ -81,11 +83,14 @@ public:
 
     void update() {
 
+        k_mutex_lock(&big_mutex, K_FOREVER);
+
         k_msleep(1);
         // Lock read mutex
         k_mutex_lock(&read_mutex, K_FOREVER);
         if (!server->get_rpc()) {
             k_mutex_unlock(&read_mutex);
+            k_mutex_unlock(&big_mutex);
             return;
         }
         k_mutex_unlock(&read_mutex);
@@ -97,10 +102,14 @@ public:
         server->send_response();
         k_mutex_unlock(&write_mutex);
 
+        k_mutex_unlock(&big_mutex);
+
     }
 
     template<typename RType, typename... Args>
     bool call(const MsgPack::str_t method, RType& result, Args&&... args) {
+
+        k_mutex_lock(&big_mutex, K_FOREVER);
 
         // Lock write mutex
         k_mutex_lock(&write_mutex, K_FOREVER);
@@ -117,6 +126,8 @@ public:
             k_mutex_unlock(&read_mutex);
             k_msleep(1);
         }
+
+        k_mutex_unlock(&big_mutex);
 
         return (client->lastError.code == NO_ERR);
 
