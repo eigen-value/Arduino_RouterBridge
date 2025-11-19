@@ -18,7 +18,7 @@
 #define BIND_METHOD "$/register"
 //#define BRIDGE_ERROR "$/bridgeLog"
 
-#define UPDATE_THREAD_STACK_SIZE    500
+#define UPDATE_THREAD_STACK_SIZE    8192
 #define UPDATE_THREAD_PRIORITY      5
 
 #define DEFAULT_SERIAL_BAUD         115200
@@ -170,7 +170,7 @@ public:
     }
 
     void update() {
-
+        Serial.println("updating");
         // Lock read mutex
         if (k_mutex_lock(&read_mutex, K_MSEC(10)) != 0 ) return;
 
@@ -182,7 +182,7 @@ public:
         }
 
         k_mutex_unlock(&read_mutex);
-
+        Serial.println("updating->processing");
         server->process_request(req);
 
         // Lock write mutex
@@ -197,6 +197,8 @@ public:
             }
 
         }
+
+        Serial.println("updating->processing->responding");
 
     }
 
@@ -215,6 +217,10 @@ public:
             }
             k_yield();
         }
+    }
+
+    void print_buf() {
+        return client->print_buf();
     }
 
 private:
