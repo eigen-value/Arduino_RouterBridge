@@ -141,6 +141,10 @@ public:
                                 NULL, NULL, NULL,
                                 UPDATE_THREAD_PRIORITY, 0, K_NO_WAIT);
 
+        Serial.print("-- STARTING UPD THREAD. ID: ");
+        Serial.print((uintptr_t)upd_tid, HEX);
+        Serial.println(" --");
+
         bool res;
         call(RESET_METHOD).result(res);
         if (res) {
